@@ -93,7 +93,7 @@ Z = attentions @ W_attent
 Z = layer_norm(Z + embedding)
 
 output = forward_prop(Z, W1, b1)
-output = forward_prop(Z, W2, b2)
+output = forward_prop(output, W2, b2)
 output = layer_norm(output + Z)
 
 # Здесь добавить обучение
