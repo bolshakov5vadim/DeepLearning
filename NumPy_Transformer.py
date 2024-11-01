@@ -68,7 +68,7 @@ inn = inn.lower
 inn_array = inn.split(inn)
 i = 0
 for word in inn_array:
-	index = my_list.index(word)
+	index = inn_array.index(word)
 	embedding[index] = 1
 
 WK1 = np.random.randn(3, 10) # размерность головы х размер запроса
