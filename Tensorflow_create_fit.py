@@ -86,8 +86,8 @@ class Model(keras.layers.Layer):
 
         c5 = self.conv_t128(c4)
         c5 = layers.concatenate([c5, c2])
-        c5 = self.conv_256(c5)
-        c5 = self.conv_256(c5)
+        c5 = self.conv_128(c5)
+        c5 = self.conv_128(c5)
 
         c5 = self.conv_t64(c4)
         c5 = layers.concatenate([c5, c1])
