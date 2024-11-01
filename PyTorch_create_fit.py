@@ -3,23 +3,23 @@ from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 
 class NN(nn.Module):
-    def __init__(self, inst_norm=False):
+    def __init__(self):
         super(NN,self).__init__()
         self.n1 = nn.Conv2d(dim_c, dim_g, 4, 2, 1) 
-        self.n2 = nn.Conv2d(dim_g, dim_g*2, 4, 2, 1, inst_norm=inst_norm)
-        self.n3 = nn.Conv2d(dim_g*2, dim_g*4, 4, 2, 1, inst_norm=inst_norm)
-        self.n4 = nn.Conv2d(dim_g*4, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
-        self.n5 = nn.Conv2d(dim_g*8, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
-        self.n6 = nn.Conv2d(dim_g*8, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
-        self.n7 = nn.Conv2d(dim_g*8, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
+        self.n2 = nn.Conv2d(dim_g, dim_g*2, 4, 2, 1)
+        self.n3 = nn.Conv2d(dim_g*2, dim_g*4, 4, 2, 1)
+        self.n4 = nn.Conv2d(dim_g*4, dim_g*8, 4, 2, 1)
+        self.n5 = nn.Conv2d(dim_g*8, dim_g*8, 4, 2, 1)
+        self.n6 = nn.Conv2d(dim_g*8, dim_g*8, 4, 2, 1)
+        self.n7 = nn.Conv2d(dim_g*8, dim_g*8, 4, 2, 1)
         self.n8 = nn.Conv2d(dim_g*8, dim_g*8, 4, 2, 1)
-        self.m1 = nn.ConvTranspose2d(dim_g*8, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
-        self.m2 = nn.ConvTranspose2d(dim_g*8*2, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
-        self.m3 = nn.ConvTranspose2d(dim_g*8*2, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
-        self.m4 = nn.ConvTranspose2d(dim_g*8*2, dim_g*8, 4, 2, 1, inst_norm=inst_norm)
-        self.m5 = nn.ConvTranspose2d(dim_g*8*2, dim_g*4, 4, 2, 1, inst_norm=inst_norm)
-        self.m6 = nn.ConvTranspose2d(dim_g*4*2, dim_g*2, 4, 2, 1, inst_norm=inst_norm)
-        self.m7 = nn.ConvTranspose2d(dim_g*2*2, dim_g*1, 4, 2, 1, inst_norm=inst_norm)
+        self.m1 = nn.ConvTranspose2d(dim_g*8, dim_g*8, 4, 2, 1)
+        self.m2 = nn.ConvTranspose2d(dim_g*8*2, dim_g*8, 4, 2, 1)
+        self.m3 = nn.ConvTranspose2d(dim_g*8*2, dim_g*8, 4, 2, 1)
+        self.m4 = nn.ConvTranspose2d(dim_g*8*2, dim_g*8, 4, 2, 1)
+        self.m5 = nn.ConvTranspose2d(dim_g*8*2, dim_g*4, 4, 2, 1)
+        self.m6 = nn.ConvTranspose2d(dim_g*4*2, dim_g*2, 4, 2, 1)
+        self.m7 = nn.ConvTranspose2d(dim_g*2*2, dim_g*1, 4, 2, 1)
         self.m8 = nn.ConvTranspose2d(dim_g*1*2, dim_c, 4, 2, 1)
     def forward(self,x):
         n1 = self.n1(x)
