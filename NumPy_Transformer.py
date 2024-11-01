@@ -113,7 +113,7 @@ attention1 = decoder_attention(output, Z, WQ1, WK1, WV1)
 attention2 = decoder_attention(output, Z, WQ2, WK2, WV2)
 
 attentions = np.concatenate([attention1, attention2], axis=1)
-Z_decoder = attentions @ W_attent
+Z_decoder = forward_prop(attentions, W_attent, b_attent)
 Z_decoder = layer_norm(Z_decoder + Z)
 
 
@@ -123,7 +123,7 @@ output = layer_norm(output + Z_decoder)
 
 # Здесь добавить обучение
 
-logits = forward_prop(decoder_output[-1], W_linear, b_linear)# Используем для предсказания только последние выходные данные
+logits = forward_prop(output[-1], W_linear, b_linear)# Используем для предсказания только последние выходные данные
 probs = softmax([logits])
 
 print(inn)
