@@ -65,7 +65,7 @@ b_attent = np.random.randn(6)
 embedding = np.zeros(10)# вход
 inn = input()
 inn = inn.lower
-inn_array = inn.split(inn)
+inn_array = inn.split(" ")
 i = 0
 for word in inn_array:
 	index = inn_array.index(word)
