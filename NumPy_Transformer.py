@@ -13,8 +13,12 @@ def attention(x, WQ, WK, WV):
     scores = scores @ V
     return scores
 
-#def pos_embedd(input, dim, pos):
+def pos_embedd(input, embedding):
 #    input[pos] += np.sin(pos / (10000 ** (2 * i / dim)))
+    for word in input:
+	index = input.index(vocabulary)
+	embedding[index] = 1
+    return embedding
 
 def decoder_attention(output, x, WQ, WK, WV):
     d_key = 3 # размерность внимания
@@ -42,7 +46,7 @@ def forward_prop(Z, W, b):
     return layer
 
 
-vocabulary = [
+global vocabulary = [
     "hello",
     "mundo",
     "world",
@@ -62,14 +66,11 @@ W_attent = np.random.randn(4, 6)
 b_attent = np.random.randn(6)
 # матрицы + матрицы внимания
 
-embedding = np.zeros(10)# вход
 inn = input()
 inn = inn.lower
-inn_array = inn.split(" ")
-i = 0
-for word in inn_array:
-	index = inn_array.index(word)
-	embedding[index] = 1
+input = inn.split(" ")
+embedding = pos_embedd(input, np.zeros(10))# вход
+
 
 WK1 = np.random.randn(3, 10) # размерность головы х размер запроса
 WV1 = np.random.randn(3, 10)
@@ -98,7 +99,7 @@ output = layer_norm(output + Z)
 
 # Здесь добавить обучение
 
-# Начинается декодер. Здесь max_iters = 5 for i in range(max_iters):  if next_token == "EOS":return output
+# Начинается декодер. Здесь max_iters = 5 for i in range(max_iters):
 
 attention1 = attention(output, embedding, WQ1, WK1, WV1)
 
@@ -126,6 +127,7 @@ output = layer_norm(output + Z_decoder)
 logits = forward_prop(output[-1], W_linear, b_linear)# Используем для предсказания только последние выходные данные
 probs = softmax([logits])
 
-print(inn)
-print(" EOS " + vocabulary[np.argmax(probs)])
+out = []
+out += vocabulary[np.argmax(probs)]
+print(out)
 input()
