@@ -85,9 +85,6 @@ list_of_transformations = [
 transform = transforms.Compose(list_of_transformations)
 
 #dataset
-#L__test
-#¦   L__ Cat
-#¦   L__ Dog
 #L__train
 #¦   L__ Cat
 #¦   L__ Dog
