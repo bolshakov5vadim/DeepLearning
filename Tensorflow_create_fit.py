@@ -46,7 +46,7 @@ class Model(keras.layers.Layer):
         self.conv_64 = layers.Conv2D(64, (3, 3), activation='relu', padding='same')
 # (3 3) размер кисти
 # 64 число новых каналов 
-        self.pool_1 = layers.MaxPooling2D((2, 2))#уменьшение в 2 раза
+        self.pool_1 = layers.MaxPooling2D((2, 2))#2Х уменьш. + пофиг на повороты, размеры, координаты
         self.conv_128 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')
         self.conv_256 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')
         self.conv_512 = layers.Conv2D(512, (3, 3), activation='relu', padding='same')
