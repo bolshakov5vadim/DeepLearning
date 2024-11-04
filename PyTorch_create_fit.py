@@ -12,7 +12,6 @@ class NN(nn.Module):
         self.conv5 = nn.Conv2d(ch_num2*8, ch_num2*8, stride=3)
         self.conv6 = nn.Conv2d(ch_num2*8, ch_num2*8, stride=3)
         self.conv7 = nn.Conv2d(ch_num2*8, ch_num2*8, stride=3)
-        self.conv8 = nn.Conv2d(ch_num2*8, ch_num2*8, stride=3)
         self.convt1 = nn.ConvTranspose2d(ch_num2*8, ch_num2*8, stride=3)
         self.convt2 = nn.ConvTranspose2d(ch_num2*8*2, ch_num2*8, stride=3)
         self.convt3 = nn.ConvTranspose2d(ch_num2*8*2, ch_num2*8, stride=3)
@@ -23,41 +22,42 @@ class NN(nn.Module):
         self.conv0 = nn.Conv2d(ch_num2*2, 1, stride=3) 
     def forward(self,x):
         n1 = self.conv1(x)
+        n1 = nn.BatchNorm2d(ch_num2, affine=False, track_running_stats=False)(n1)
         n1 = nn.ReLU(n1)
         n1 = self.conv1(n1)
 
         n2 = self.conv2(n1)
+        n2 = nn.BatchNorm2d(ch_num2*2, affine=False, track_running_stats=False)(n2)
         n2 = nn.ReLU(n2)
         n2 = self.conv2(n2)
 
         n3 = self.conv3(n2)
+        n3 = nn.BatchNorm2d(ch_num2*4, affine=False, track_running_stats=False)(n3)
         n3 = nn.ReLU(n3)
         n3 = self.conv3(n3)
 
         n4 = self.conv4(n3)
+        n4 = nn.BatchNorm2d(ch_num2*8, affine=False, track_running_stats=False)(n4)
         n4 = nn.ReLU(n4)
         n4 = self.conv4(n4)
 
         n5 = self.conv5(n4)
+        n5 = nn.BatchNorm2d(ch_num2*8, affine=False, track_running_stats=False)(n5)
         n5 = nn.ReLU(n5)
         n5 = self.conv5(n5)
 
         n6 = self.conv6(n5)
+        n6 = nn.BatchNorm2d(ch_num2*8, affine=False, track_running_stats=False)(n6)
         n6 = nn.ReLU(n6)
         n6 = self.conv6(n6)
 
         n7 = self.conv7(n6)
         n7 = self.conv7(n7)
 
-        m1 = self.convt1(n7)
-        m1 = torch.cat([m1, n7], 1)
-        m1 = self.conv7(m1)
-        m1 = nn.ReLU(m1)
-        m1 = self.conv7(m1)
-
         m2 = self.convt2(m1)
         m2 = torch.cat([m2, n6], 1)
         m2 = self.conv6(m2)
+        m2 = nn.BatchNorm2d(ch_num2*8, affine=False, track_running_stats=False)(m2)
         m2 = nn.ReLU(m2)
         m2 = self.conv6(m2)
 
