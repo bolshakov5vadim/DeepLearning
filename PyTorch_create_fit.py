@@ -24,55 +24,71 @@ class NN(nn.Module):
     def forward(self,x):
         n1 = self.conv1(x)
         n1 = nn.ReLU(n1)
+        n1 = self.conv1(n1)
+
         n2 = self.conv2(n1)
         n2 = nn.ReLU(n2)
+        n2 = self.conv2(n2)
+
         n3 = self.conv3(n2)
         n3 = nn.ReLU(n3)
+        n3 = self.conv3(n3)
+
         n4 = self.conv4(n3)
         n4 = nn.ReLU(n4)
+        n4 = self.conv4(n4)
+
         n5 = self.conv5(n4)
         n5 = nn.ReLU(n5)
+        n5 = self.conv5(n5)
+
         n6 = self.conv6(n5)
         n6 = nn.ReLU(n6)
+        n6 = self.conv6(n6)
+
         n7 = self.conv7(n6)
-        n7 = nn.ReLU(n7)
+        n7 = self.conv7(n7)
 
-        n8 = self.conv8(n7)
-        n8 = nn.ReLU(n8)
-
-        m1 = self.convt1(n8)
+        m1 = self.convt1(n7)
         m1 = torch.cat([m1, n7], 1)
         m1 = self.conv7(m1)
+        m1 = nn.ReLU(m1)
         m1 = self.conv7(m1)
 
         m2 = self.convt2(m1)
         m2 = torch.cat([m2, n6], 1)
         m2 = self.conv6(m2)
+        m2 = nn.ReLU(m2)
         m2 = self.conv6(m2)
 
         m3 = self.convt3(m2)
         m3 = torch.cat([m3, n5], 1)
         m3 = self.conv5(m3)
+        m3 = nn.ReLU(m3)
         m3 = self.conv5(m3)
 
         m4 = self.convt4(m3)
         m4 = torch.cat([m4, n4], 1)
         m4 = self.conv4(m4)
+        m4 = nn.ReLU(m4)
         m4 = self.conv4(m4)
 
         m5 = self.convt5(m4)
         m5 = torch.cat([m5, n3], 1)
         m5 = self.conv3(m5)
+        m5= nn.ReLU(m5)
         m5 = self.conv3(m5)
 
         m6 = self.convt6(m5)
         m6 = torch.cat([m6, n2], 1)
         m6 = self.conv2(m6)
+        m6 = nn.ReLU(m6)
         m6 = self.conv2(m6)
 
         m7 = self.convt7(m6)
         m7 = torch.cat([m7, n1], 1)
         m7 = self.conv2(m7)
+        m7 = nn.ReLU(m7)
         m7 = self.conv2(m7)
 
         m8 = self.conv0(m7)
@@ -96,13 +112,13 @@ load_Train = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,
              shuffle=True, num_workers=num_workers)
 load_Test = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, 
             shuffle = False, num_workers=num_workers)
-#êàðòèíêà - òåêñò
+#картинка - текст
 
 
 
 
 class CustomDataset(torch.utils.data.Dataset):
-    def __init__(self, root,transform,,image_pairs):
+    def __init__(self, image_pairs,transform):
         self.image_pairs = image_pairs
         self.transform = transform
 
@@ -122,19 +138,19 @@ dataset_path = "new_data"
 train_path = os.path.join(dataset_path, "train")
 valid_path = os.path.join(dataset_path, "test")
 
-train_x = sorted(glob(os.path.join(train_path, "image", "*png")))#âîçâðàùàåò 2 ìàññèâà ïóòåé
+train_x = sorted(glob(os.path.join(train_path, "image", "*png")))#возвращает 2 массива путей
 train_y = sorted(glob(os.path.join(train_path, "mask", "*png")))
-train_x, train_y = shuffle(train_x, train_y, random_state=42) # ïåðåìåøèâàíèå
+train_x, train_y = shuffle(train_x, train_y, random_state=42) # перемешивание
 image_pairs = np.hstack((train_x, train_y))
 
-train_dataset = PairedImageDataset(path="/dataset/train/", transform=transform, image_pairs)
-val_dataset = PairedImageDataset(path="/dataset/val/", transform=transform, image_pairs)
+train_dataset = CustomDataset(image_pairs, transform=transform)
+val_dataset = CustomDataset(image_pairs, transform=transform)
 
 load_Train = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, 
              shuffle=True, num_workers=num_workers)
 load_Test = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, 
             shuffle = False, num_workers=num_workers)
-#êàðòèíêà-êàðòèíêà
+#картинка-картинка
 
 
 NN = NN(64, 128)
