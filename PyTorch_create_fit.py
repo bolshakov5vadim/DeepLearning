@@ -172,7 +172,7 @@ for ep in range(epochs):
 
         total = y_data.size(0)
         _, predicted = torch.max(output.data, 1)
-        correct = (predicted == labels).sum().item()
+        correct = (predicted == y_data).sum().item()
 
         if batch_idx % log_interval == 0:
                 print('Train Epoch: [{}/{}], Loss {:.4f}, Accuracy: {:.2f}%'.format
