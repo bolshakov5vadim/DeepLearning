@@ -58,13 +58,13 @@ class Model(keras.layers.Layer):
     def call(self, inputs):
         c1 = self.inp(inputs)
         c1 = self.conv_64(c1)
-        c1 = layers.BatchNormalization(c1)
+        c1 = layers.BatchNormalization()(c1)
         с1 = layers.Activation("relu")(c1)
         c1 = self.conv_64(c1)
         p1 = self.pool_1(c1)
 
         c2 = self.conv_128(p1)
-        c2 = layers.BatchNormalization(c2)
+        c2 = layers.BatchNormalization()(c2)
         с2 = layers.Activation("relu")(c2)
         с2 = self.relu(с2)
         c2 = self.conv_128(c2)
@@ -72,7 +72,7 @@ class Model(keras.layers.Layer):
         p2 = self.pool_1(c2)
 
         c3 = self.conv_256(p2)
-        c3 = layers.BatchNormalization(c3)
+        c3 = layers.BatchNormalization()(c3)
         с3 = layers.Activation("relu")(c3)
         c3 = self.conv_256(c3)
         p3 = self.pool_1(c3)
@@ -83,21 +83,21 @@ class Model(keras.layers.Layer):
         c5 = self.conv_t256(c4)
         c5 = layers.concatenate([c5, c3])
         c5 = self.conv_256(c5)
-        c5 = layers.BatchNormalization(c5)
+        c5 = layers.BatchNormalization()(c5)#вычитает из входов среднее чтобы не учить заново красные машины
         с5 = layers.Activation("relu")(c5)
         c5 = self.conv_256(c5)
 
         c5 = self.conv_t128(c4)
         c5 = layers.concatenate([c5, c2])
         c5 = self.conv_128(c5)
-        c5 = layers.BatchNormalization(c5)
+        c5 = layers.BatchNormalization()(c5)
         с5 = layers.Activation("relu")(c5)
         c5 = self.conv_128(c5)
 
         c5 = self.conv_t64(c5)
         c5 = layers.concatenate([c5, c1])
         c5 = self.conv_64(c5)
-        c5 = layers.BatchNormalization(c5)
+        c5 = layers.BatchNormalization()(c5)
         с5 = layers.Activation("relu")(c5)
         c5 = self.conv_64(c5)
 
@@ -107,56 +107,9 @@ class Model(keras.layers.Layer):
 # внизу сверточная сеть
 #model = tf.keras.models.Sequential([Conv2D_32(relu), MaxPool_2, Conv2D_64(relu), MaxPool_2, Conv2D_64(relu), MaxPool_2, Flatten, Dense_128, Dense_256, Dense_10])
 
-#layers.AveragePooling2D(pool_size=(shape[1], shape[2])) # размазывание разрешения
-#layers.Conv2D(256, 1, padding="same", use_bias=False)) # сверточный слой
-#layers.BatchNormalization()#усредняет входы чтобы не учить заново красные машины
-#layers.Activation("relu")
 
-#layers.Conv2D(256, 1, padding="same", use_bias=False)(inputs) # сверточный слой
-#layers.BatchNormalization()
-#layers.Activation("relu")
 
-#layers.Conv2D(256, 3, padding="same", use_bias=False, dilation_rate=6)(inputs)
-#layers.BatchNormalization()
-#layers.Activation("relu")
 
-#layers.Conv2D(256, 3, padding="same", use_bias=False, dilation_rate=12)(inputs)
-#layers.BatchNormalization()
-#layers.Activation("relu")
-
-#layers.Conv2D(256, 3, padding="same", use_bias=False, dilation_rate=18)(inputs)
-#layers.BatchNormalization()
-#layers.Activation("relu")
-
-#layers.Concatenate()([y1, y2, y3, y4, y5]) 
-#x_a = Conv2D(256, 1, padding="same", use_bias=False)(x_a) # сверточный слой
-#x_a = BatchNormalization()(x_a)
-#x_a = Activation("relu")(x_a)
-#x_a = UpSampling2D((4, 4), interpolation="bilinear")(x_a) # развертывающий слой
-
-#x_b = Conv2D(filters=48, kernel_size=1, padding='same', use_bias=False)(x_b)
-#x_b = BatchNormalization()(x_b)
-#x_b = Activation('relu')(x_b)
-
-#x = Concatenate()([x_a, x_b])
-
-#x = Conv2D(filters=256, kernel_size=3, padding='same', use_bias=False)(x) # сверточный слой
-#x = BatchNormalization()(x)
-#x = Activation('relu')(x)
-
-#x = Conv2D(filters=256, kernel_size=3, padding='same', use_bias=False)(x) # сверточный слой
-#x = BatchNormalization()(x)
-#x = Activation('relu')(x)
-
-#se_shape = (1, 1, x.shape[-1])#сохраняем вход для остаточного соединения
-#se = GlobalAveragePooling2D()
-#se = Reshape(se_shape)(se)
-#self.dense_zip = Dense(x.shape[-1] // 8, activation='relu', kernel_initializer='he_normal', use_bias=False)(se)
-#self.dense_unzip = Dense(x.shape[-1], activation='sigmoid', kernel_initializer='he_normal', use_bias=False)(se)
-
-#self.upsamp = UpSampling2D((4, 4), interpolation="bilinear")(x)  # развертывающий слой
-#self.conv_1 = Conv2D(1, 1)(x)
-#self.activ = Activation("sigmoid")(x)
 
 #self.batch_norm_2 = layers.BatchNormalization()
 #self.in_layer = model.add(layers.Flatten())
