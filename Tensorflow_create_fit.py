@@ -47,6 +47,7 @@ class Model(keras.layers.Layer):
 # (3 3) размер кисти
 # 64 число новых каналов 
         self.pool_1 = layers.MaxPooling2D((2, 2))#2Х уменьш. + пофиг на повороты, размеры, координаты
+        self.uppool_1 = layers.UpSampling2D((2, 2)) # обратная операция
         self.conv_128 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')
         self.conv_256 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')
         self.conv_512 = layers.Conv2D(512, (3, 3), activation='relu', padding='same')
@@ -86,6 +87,7 @@ class Model(keras.layers.Layer):
         c5 = layers.BatchNormalization()(c5)#вычитает из входов среднее чтобы не учить заново красные машины
         с5 = layers.Activation("relu")(c5)
         c5 = self.conv_256(c5)
+        c5 = self.uppool_1(c5)
 
         c5 = self.conv_t128(c4)
         c5 = layers.concatenate([c5, c2])
@@ -93,6 +95,7 @@ class Model(keras.layers.Layer):
         c5 = layers.BatchNormalization()(c5)
         с5 = layers.Activation("relu")(c5)
         c5 = self.conv_128(c5)
+        c5 = self.uppool_1(c5)
 
         c5 = self.conv_t64(c5)
         c5 = layers.concatenate([c5, c1])
@@ -100,6 +103,7 @@ class Model(keras.layers.Layer):
         c5 = layers.BatchNormalization()(c5)
         с5 = layers.Activation("relu")(c5)
         c5 = self.conv_64(c5)
+        c5 = self.uppool_1(c5)
 
         c5 = self.conv_1(c5)
         return c5
