@@ -25,7 +25,8 @@ def function_for_map(x, y):
   x = x/255.0
   x = x.astype(np.float32)
   x.set_shape([512, 512, 1])
-  
+
+
   y = y.decode()
   y = cv2.imread(y, cv2.IMREAD_GRAYSCALE)
   y = cv2.resize(y, (512, 512))
@@ -33,8 +34,7 @@ def function_for_map(x, y):
   y = y.astype(np.float32)
   y.set_shape([512, 512, 1])
   #ЕСЛИ картинка-текст
-  #with tf.io.gfile.GFile(y, 'r') as f:
-  #      y = f.read().strip().split(" ") # убрать пробелы с начала и конца
+  # y = np.loadtxt(y, usecols=range(5))
   return x, y
 
 
@@ -47,33 +47,34 @@ class Model(keras.layers.Layer):
 # (3 3) размер кисти
 # 64 число новых каналов 
         self.pool_1 = layers.MaxPooling2D((2, 2))#уменьшение в 2 раза
-        self.batch_norm = layers.BatchNormalization()
         self.conv_128 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')
         self.conv_256 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')
         self.conv_512 = layers.Conv2D(512, (3, 3), activation='relu', padding='same')
         self.conv_t256 = layers.Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same')
         self.conv_t128 = layers.Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')
         self.conv_t64 = layers.Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')
-        self.conv_1 = layers.Conv2D(1, (1, 1), activation='sigmoid')
+        self.conv_1 = layers.Conv2D(1, (1, 1), activation='sigmoid', padding='same')
 
     def call(self, inputs):
         c1 = self.inp(inputs)
         c1 = self.conv_64(c1)
-        с1 = self.batch_norm(с1)
+        c1 = layers.BatchNormalization(c1)
+        с1 = layers.Activation("relu")(c1)
         c1 = self.conv_64(c1)
-        с1 = self.batch_norm(с1)
         p1 = self.pool_1(c1)
 
         c2 = self.conv_128(p1)
-        с2 = self.batch_norm(с2)
+        c2 = layers.BatchNormalization(c2)
+        с2 = layers.Activation("relu")(c2)
+        с2 = self.relu(с2)
         c2 = self.conv_128(c2)
         с2 = self.batch_norm(с2)
         p2 = self.pool_1(c2)
 
         c3 = self.conv_256(p2)
-        с3 = self.batch_norm(с3)
+        c3 = layers.BatchNormalization(c3)
+        с3 = layers.Activation("relu")(c3)
         c3 = self.conv_256(c3)
-        с3 = self.batch_norm(с3)
         p3 = self.pool_1(c3)
 
         c4 = self.conv_512(p3)#ботл-нек
@@ -82,23 +83,29 @@ class Model(keras.layers.Layer):
         c5 = self.conv_t256(c4)
         c5 = layers.concatenate([c5, c3])
         c5 = self.conv_256(c5)
+        c5 = layers.BatchNormalization(c5)
+        с5 = layers.Activation("relu")(c5)
         c5 = self.conv_256(c5)
 
         c5 = self.conv_t128(c4)
         c5 = layers.concatenate([c5, c2])
         c5 = self.conv_128(c5)
+        c5 = layers.BatchNormalization(c5)
+        с5 = layers.Activation("relu")(c5)
         c5 = self.conv_128(c5)
 
-        c5 = self.conv_t64(c4)
+        c5 = self.conv_t64(c5)
         c5 = layers.concatenate([c5, c1])
         c5 = self.conv_64(c5)
+        c5 = layers.BatchNormalization(c5)
+        с5 = layers.Activation("relu")(c5)
         c5 = self.conv_64(c5)
 
         c5 = self.conv_1(c5)
         return c5
 # вверху вид сверточной сети U-net/Diffusion
 # внизу сверточная сеть
-#model = tf.keras.models.Sequential([Conv2D_32, MaxPool_2, Conv2D_64, MaxPool_2, Conv2D_64, MaxPool_2, Flatten, Dense_128, Dense_256, Dense_10])
+#model = tf.keras.models.Sequential([Conv2D_32(relu), MaxPool_2, Conv2D_64(relu), MaxPool_2, Conv2D_64(relu), MaxPool_2, Flatten, Dense_128, Dense_256, Dense_10])
 
 #layers.AveragePooling2D(pool_size=(shape[1], shape[2])) # размазывание разрешения
 #layers.Conv2D(256, 1, padding="same", use_bias=False)) # сверточный слой
