@@ -1,5 +1,36 @@
 import numpy as np
 
+# Так Устроен Трансформер-НС
+#кодирование
+#позиционное кодирование
+
+#матрицы внимания1
+#матрицы внимания2
+#конкатенация
+#forward_prop_A
+#batch_norm
+
+#forward_prop_1
+#forward_prop_2
+#batch_norm
+
+#матрицы внимания1
+#матрицы внимания2
+#конкатенация
+#forward_prop_A
+#batch_norm
+
+#матрицы внимания1(K*декодера V*декодера Q*кодера)
+#матрицы внимания2(K*декодера V*декодера Q*кодера)
+#конкатенация
+#forward_prop_A
+#batch_norm
+
+#forward_prop_1
+#forward_prop_2
+#batch_norm
+#forward_prop_3
+#softmax
 
 def attention(x, WQ, WK, WV):
     d_key = 3 # размерность внимания
@@ -104,7 +135,7 @@ attention1 = attention(output, embedding, WQ1, WK1, WV1)
 attention2 = attention(output, embedding, WQ2, WK2, WV2)
 attentions = np.concatenate([attention1, attention2], axis=1)
 
-Z = forward_prop(attentions, W_attent, b_attent)
+Z_decoder = forward_prop(attentions, W_attent, b_attent)
 Z = layer_norm(Z_decoder + [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]) #здесь символ SOS
 
 attention1 = decoder_attention(output, Z, WQ1, WK1, WV1)
