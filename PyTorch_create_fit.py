@@ -41,54 +41,40 @@ class NN(nn.Module):
         n4 = self.conv4(n4)
         n4 = self.pool_1(n4)
 
-        n7 = self.conv7(n6)
-        n7 = self.conv7(n7)
+        xx = self.conv7(n4)
+        xx = self.conv7(xx)
+
+        m1 = self.convt1(xx)
+        m1 = torch.cat([m1, n4], 1)
+        m1 = self.conv4(m1)
+        m1 = nn.BatchNorm2d(ch_num2*8, affine=False, track_running_stats=False)(m1)
+        m1 = nn.ReLU(m1)
+        m1 = self.conv4(m1)
+        m1 = self.uppool_1(m1)
 
         m2 = self.convt2(m1)
-        m2 = torch.cat([m2, n6], 1)
-        m2 = self.conv6(m2)
-        m2 = nn.BatchNorm2d(ch_num2*8, affine=False, track_running_stats=False)(m2)
+        m2 = torch.cat([m2, n3], 1)
+        m2 = self.conv3(m2)
         m2 = nn.ReLU(m2)
-        m2 = self.conv6(m2)
+        m2 = self.conv3(m2)
         m2 = self.uppool_1(m2)
 
         m3 = self.convt3(m2)
-        m3 = torch.cat([m3, n5], 1)
-        m3 = self.conv5(m3)
+        m3 = torch.cat([m3, n2], 1)
+        m3 = self.conv2(m3)
         m3 = nn.ReLU(m3)
-        m3 = self.conv5(m3)
+        m3 = self.conv2(m3)
         m3 = self.uppool_1(m3)
 
         m4 = self.convt4(m3)
-        m4 = torch.cat([m4, n4], 1)
-        m4 = self.conv4(m4)
-        m4 = nn.ReLU(m4)
-        m4 = self.conv4(m4)
+        m4 = torch.cat([m4, n1], 1)
+        m4 = self.conv1(m4)
+        m4= nn.ReLU(m4)
+        m4 = self.conv1(m4)
         m4 = self.uppool_1(m4)
 
-        m5 = self.convt5(m4)
-        m5 = torch.cat([m5, n3], 1)
-        m5 = self.conv3(m5)
-        m5= nn.ReLU(m5)
-        m5 = self.conv3(m5)
-        m5 = self.uppool_1(m5)
-
-        m6 = self.convt6(m5)
-        m6 = torch.cat([m6, n2], 1)
-        m6 = self.conv2(m6)
-        m6 = nn.ReLU(m6)
-        m6 = self.conv2(m6)
-        m6 = self.uppool_1(m6)
-
-        m7 = self.convt7(m6)
-        m7 = torch.cat([m7, n1], 1)
-        m7 = self.conv2(m7)
-        m7 = nn.ReLU(m7)
-        m7 = self.conv2(m7)
-        m7 = self.uppool_1(m7)
-
-        m8 = self.conv0(m7)
-        return nn.Tanh(m8)
+        end = self.conv0(m4)
+        return nn.Tanh(end)
 
 list_of_transformations = [
     transforms.Resize((256,256)),
@@ -152,9 +138,7 @@ load_Test = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size,
 NN = NN(64, 128)
 print(NN)
 optimizer = optim.Adam(Gen.parameters(), lr=2e-4, betas=(0.5, 0.999))
-iter_per_plot = 500
 epochs = 5
-L1_lambda = 100.0
 
 for ep in range(epochs):
     for batch_index, (x_data, y_data) in enumerate(load_Train):
@@ -162,13 +146,13 @@ for ep in range(epochs):
         loss = (output - y_data) ** 2
         # loss = nn.NLLLoss(ouptut, y_data)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
         total = y_data.size(0)
         _, predicted = torch.max(output.data, 1)
         correct = (predicted == y_data).sum().item()
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
         if batch_idx % log_interval == 0:
                 print('Train Epoch: [{}/{}], Loss {:.4f}, Accuracy: {:.2f}%'.format
