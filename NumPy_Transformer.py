@@ -1,67 +1,23 @@
 import numpy as np
 
-# Так Устроен Трансформер-НС
-#кодирование
-#позиционное кодирование
-
-#матрицы внимания1
-#матрицы внимания2
-#конкатенация
-#forward_prop_A
-#batch_norm
-
-#forward_prop_1
-#forward_prop_2
-#batch_norm
-
-#матрицы внимания1
-#матрицы внимания2
-#конкатенация
-#forward_prop_A
-#batch_norm
-
-#матрицы внимания1(K*декодера V*декодера Q*кодера)
-#матрицы внимания2(K*декодера V*декодера Q*кодера)
-#конкатенация
-#forward_prop_A
-#batch_norm
-
-#forward_prop_1
-#forward_prop_2
-#batch_norm
-#forward_prop_3
-#softmax
-
-def attention(x, WQ, WK, WV):
-    d_key = 3 # размерность внимания
-    K = x @ WK
-    V = x @ WV
-    Q = x @ WQ
-
-    scores = Q @ K.T 
-    scores = scores / np.sqrt(d_key)
-    scores = softmax(scores)
-    scores = scores @ V
-    return scores
-
-def pos_embedd(input, embedding):
-#    input[pos] += np.sin(pos / (10000 ** (2 * i / dim)))
-    for word in input:
-	index = input.index(vocabulary)
-	embedding[index] = 1
-    return embedding
-
-def decoder_attention(output, x, WQ, WK, WV):
-    d_key = 3 # размерность внимания
-    K = output @ WK    # Отличие, передаём output
-    V = output @ WV 
+def attention(x, xo, WQ, WK, WV):
+    d = len(WQ) # размерность внимания
+    K = xo @ WK    # Отличие, передаём output
+    V = xo @ WV
     Q = x @ WQ   # То же, что и для самовнимания
-
-    scores = Q @ K.T # остаточное соединение умножением
-    scores = scores / np.sqrt(d_key)
+# QVK обучаются вместе. Задачи распределяются между ними из-за особого порядка умножения
+    scores = Q * K
+    scores = scores / np.sqrt(d)
     scores = softmax(scores)
-    scores = scores @ V # остаточное соединение умножением
+    scores = scores * V
     return scores
+
+def pos_embedd(inputt, vocabulary, embedding):
+#    inputt[pos] += np.sin(pos / (10000 ** (2 * i / dim)))
+    for word in inputt:
+      index = vocabulary.index(word)
+      embedding[index] = 1
+    return embedding
 
 def layer_norm(x, epsilon=1e-6): # layer_norm нужен для защиты от переполнения
     mean = x.mean(axis=-1, keepdims=True)
@@ -69,91 +25,107 @@ def layer_norm(x, epsilon=1e-6): # layer_norm нужен для защиты о�
     return (x - mean) / (std + epsilon)
 
 def softmax(x):
-    return np.exp(x) / np.sum(np.exp(x), axis=1, keepdims=True)
+
+    return np.exp(x) / np.sum(np.exp(x))
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(x))
 
 def forward_prop(Z, W, b):
     layer_raw = Z.dot(W) + b
-    layer = 1 / (1 + np.exp(-hidden_raw))
+    layer = 1 / (1 + np.exp(-layer_raw))
     return layer
 
 
-global vocabulary = [
+vocabulary = [
     "hello",
     "mundo",
     "world",
     "how",
     "?",
-    "EOS",
-    "SOS",
+    "eos",
+    "sos",
     "a",
     "hola",
     "c",
 ]
-W1 = np.random.randn(4, 10)
-W2 = np.random.randn(10, 4)
+
+W1 = np.random.randn(10, 4) # вход декод внимание * сжатие 
+W2 = np.random.randn(4, 10)
 W3 = np.random.randn(10, 10) # длина ввода * длина словаря
-b1 = np.random.randn(10)
-b2 = np.random.randn(4)
+b1 = np.random.randn(4)
+b2 = np.random.randn(10)
 b3 = np.random.randn(10) # длина словаря
 # матрицы 
 
-WK1 = np.random.randn(3, 10) # размерность головы х размер запроса
-WV1 = np.random.randn(3, 10)
-WQ1 = np.random.randn(3, 10)
+WK1 = np.random.randn(10, 3) # размерность головы х размер запроса
+WV1 = np.random.randn(10, 3)
+WQ1 = np.random.randn(10, 3)
 
-WK2 = np.random.randn(3, 10)
-WV2 = np.random.randn(3, 10)
-WQ2 = np.random.randn(3, 10)
+WK2 = np.random.randn(10, 3)
+WV2 = np.random.randn(10, 3)
+WQ2 = np.random.randn(10, 3)
 
-W_attent = np.random.randn(4, 6) 
-b_attent = np.random.randn(6)
+W_attent = np.random.randn(6, 10) 
+b_attent = np.random.randn(10)
 # матрицы внимания
 
-inn = input()
-inn = inn.lower
-input = inn.split(" ")
-embedding = pos_embedd(input, np.zeros(10))# вход
+s = input()
+s = s.lower()
+inputt = s.split(" ")
+
+embedding = pos_embedd(inputt, vocabulary, np.zeros(10))# вход
+print(f'Embedding-{embedding}')
 
 # Начинается кодер.
 
-attention1 = attention(embedding, WQ1, WK1, WV1)
-attention2 = attention(embedding, WQ2, WK2, WV2)
-attentions = np.concatenate([attention1, attention2], axis=1)
+attention1 = attention(embedding, embedding, WQ1, WK1, WV1)
+attention2 = attention(embedding, embedding, WQ2, WK2, WV2)
+attentions = np.concatenate([attention1, attention2], axis=0)
 
 Z = forward_prop(attentions, W_attent, b_attent)
 Z = layer_norm(Z + embedding)
 
-output = forward_prop(Z, W1, b1)
-output = forward_prop(output, W2, b2)
-output = layer_norm(output + Z)
+encoder = forward_prop(Z, W1, b1)
+encoder = forward_prop(encoder, W2, b2)
+encoder = layer_norm(encoder + Z)
+
+print(f'Attentions(encode)-{encoder}')
+input()
 
 # Здесь добавить обучение
 
 # Начинается декодер. Здесь max_iters = 5 for i in range(max_iters):
 
-attention1 = attention(output, embedding, WQ1, WK1, WV1)
-attention2 = attention(output, embedding, WQ2, WK2, WV2)
-attentions = np.concatenate([attention1, attention2], axis=1)
+attention1 = attention(encoder, embedding, WQ1, WK1, WV1)
+attention2 = attention(encoder, embedding, WQ2, WK2, WV2)
+attentions = np.concatenate([attention1, attention2], axis=0)
 
-Z_decoder = forward_prop(attentions, W_attent, b_attent)
-Z = layer_norm(Z_decoder + [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]) #здесь символ SOS
+decoder1 = forward_prop(attentions, W_attent, b_attent)
+decoder1 = layer_norm(decoder1)
 
-attention1 = decoder_attention(output, Z, WQ1, WK1, WV1)
-attention2 = decoder_attention(output, Z, WQ2, WK2, WV2)
-attentions = np.concatenate([attention1, attention2], axis=1)
+print(f'Attentions(decoder1)-{decoder1}')
+input()
 
-Z_decoder = forward_prop(attentions, W_attent, b_attent)
-Z_decoder = layer_norm(Z_decoder + Z)
+attention1 = attention(encoder, decoder1, WQ1, WK1, WV1)
+attention2 = attention(encoder, decoder1, WQ2, WK2, WV2)
+attentions = np.concatenate([attention1, attention2], axis=0)
 
+decoder1 = forward_prop(attentions, W_attent, b_attent)
+decoder2 = layer_norm(decoder2 + decoder1)
 
-output = forward_prop(Z_decoder, W1, b1)
-output = forward_prop(Z_decoder, W2, b2)
-output = layer_norm(output + Z_decoder)
+print(f'Attentions(decoder2)-{Z}')
+input()
+
+output = forward_prop(decoder2, W1, b1)
+output = forward_prop(output, W2, b2)
+output = layer_norm(output + decoder2)
 
 # Здесь добавить обучение
 
-logits = forward_prop(output[-1], W3, b3)# Используем для предсказания только последние выходные данные
-logits = softmax([logits])
+logits = forward_prop(output, W3, b3)# Используем для предсказания только последние выходные данные
+#logits = softmax([logits])
+logits = sigmoid([logits])
 
 out = []
 out += vocabulary[np.argmax(logits)]
