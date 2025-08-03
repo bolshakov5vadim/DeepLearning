@@ -56,19 +56,6 @@ import math
 from torch.utils.data import Dataset, DataLoader
 
 
-class Word2Vec(nn.Module):
-	def __init__(self, vocab_size, embedding_dim):
-		super(Word2Vec, self).__init__()
-		self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-		self.linear = nn.Linear(embedding_dim, vocab_size)
-		self.activation_function = nn.LogSoftmax(dim=-1)
-
-	def forward(self, x):
-		embed = self.embeddings(x)
-		lin = self.linear(embed)
-		activation = self.activation_function(lin)
-		return activation
-
 class CustomDataset(Dataset):
 	def __init__(self, data):
 		self.data = data
