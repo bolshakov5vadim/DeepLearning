@@ -34,14 +34,17 @@
 	int* a1 = &a;
 	std::cout << *a1 << '\t' << a1;
 
-Word2Vec — это метод представления слов в виде векторов, который позволяет захватывать семантические и синтаксические особенности слов.Состоит из len(vocab) матриц длиной embed_dim.
-Существует два способа обучения Word2Vec:
-CBOW (Continuous Bag of Words) — предсказывает одно слово по многим.
-Skip-gram — предсказывает многие слова по одному.
+# Word2Vec — это метод представления слов в виде векторов, который позволяет 
+# захватывать семантические и синтаксические особенности слов.
+# Состоит из матриц длиной vocab x embed_dim.
+# Существует два способа обучения Word2Vec:
+# CBOW (Continuous Bag of Words) — предсказывает одно слово по многим.
+# Skip-gram — предсказывает многие слова по одному.
 
 
-Метрики безопасности-среднее время реагирования на инцидент, процент покрытия систем, скорость восстановления, срок и точку восстановления данных
-Конференция 2023 где говорили о уязвимостях мерехвата СМС, ультразвуковой взлом Умных док-станций
+# Метрики безопасности-среднее время реагирования на инцидент, процент покрытия систем,
+# скорость восстановления, срок и точку восстановления данных
+# Конференция 2023 (уязвимости перехвата СМС, ультразвуковой взлом Умных док-станций)
 
 
 # Определение нейронной сети
@@ -107,27 +110,30 @@ class NN(nn.Module):
    def __init__(self, dim):
        super(NN, self).__init__()
        self.dim = dim
-       self.a_dim = dim // 3
+       self.a_dim = dim // 2
        self.max_context=max_context
-       self.w2v=Word2Vec(dim,dim//3)
+       self.w2v = nn.Embedding(self.dim, self.a_dimembedding_dim)
        self.att1 = Attention(self.dim, self.a_dim)
        self.att2 = Attention(self.dim, self.a_dim)
-       self.a_linear = nn.Linear(self.a_dim*2, self.dim)
+       self.a_linear = nn.Linear(self.a_dim, self.dim)
        self.linear1 = nn.Linear(self.dim, self.dim//2)
        self.linear2 = nn.Linear(self.dim//2, self.dim)
        self.linear3 = nn.Linear(self.dim, self.dim)
+       self.att = nn.MultiheadAttention(self.dim, 1)
    def forward(self, x):
     current_sequence = x.clone()#ИСПРАВЛЕНИЕ!
     outputs =  torch.empty(dim)
     for i in range(max_context//2-1):#!!!ОСНОВНОЙ ПРИКОЛ ТРАНСФОРМЕРА - ЦИКЛ
       #ENCODER
       y=self.w2v(x)
-      a1 = self.att1(y,y)
-      a2 = self.att2(y,y)
-      a = torch.cat([a1, a2], dim=-1)#dim -1 для w2v
-      a = self.a_linear(a)
+      # a1 = self.att1(y,y)
+      # a2 = self.att2(y,y)
+      # a = torch.cat([a1, a2], dim=-1)#dim -1 для w2v
+      # a = self.a_linear(a)
+      a,b = self.att(y,y,y)
       a = a + y
       b1 = nn.LayerNorm(self.dim)(a)
+
       #BOTTLENECK
       m = self.linear1(b1)
       m = self.linear2(m)
@@ -135,20 +141,13 @@ class NN(nn.Module):
       encod = nn.LayerNorm(self.dim)(m)
 
       #DECODER1
-
-      a1 = self.att1(encod, encod)
-      a2 = self.att2(encod, encod)
-      a = torch.cat([a1, a2], dim=-1)
-      decoder1 = self.a_linear(a)
-      decoder1 = decoder1 + encod
+      a,b = self.att(encod,encod,encod) # Декодер=Энкодер+Энкодер с инпутом старого
+      decoder1 = a + encod
       decoder1 = nn.LayerNorm(self.dim)(decoder1)
 
       #DECODER2
-      a1 = self.att1(decoder1,encod)#Декодер=Энкодер+Энкодер с инпутом старого
-      a2 = self.att2(decoder1,encod)
-      a = torch.cat([a1, a2], dim=-1)
-      decoder2 = self.a_linear(a)
-      decoder2 = decoder2 + decoder1
+      a,b = self.att(decoder1,decoder1,encod)
+      decoder2 = a + decoder1
       decoder2 = nn.LayerNorm(self.dim)(decoder2)
 
       #BOTTLENECK
@@ -165,20 +164,13 @@ class NN(nn.Module):
       next_token = torch.argmax(output[0][0], dim=-1)
       addr=(current_sequence == 0).nonzero(as_tuple=True)[-1][0]#адрес первого нуля
       current_sequence[0][addr] = next_token.unsqueeze(0).unsqueeze(0)
-
       #выделить токен и прибавить к тексту
+
       if next_token==vocabulary.index("EOS"): break
       if current_sequence[0][-1]!=0.: break
 
     return current_sequence,outputs;
 
-def to_tensor(not_tensor):
-
-  embedding=np.array(not_tensor, dtype=np.int64)#int64/float32
-  tensor = torch.from_numpy(embedding)
-  example=torch.zeros(max_context)
-  tensor=nn.utils.rnn.pad_sequence([tensor,example]).T[0]
-  return tensor
 
 def to_pretensor(s):
   not_tensor = []
@@ -188,6 +180,15 @@ def to_pretensor(s):
     try:not_tensor.append(vocabulary.index(word))
     except: print (word+" not in list")
   return not_tensor
+
+
+def to_tensor(not_tensor):
+
+  embedding=np.array(not_tensor, dtype=np.int64)#int64/float32
+  tensor = torch.from_numpy(embedding)
+  example=torch.zeros(max_context)
+  tensor=nn.utils.rnn.pad_sequence([tensor,example]).T[0]
+  return tensor
 
 
 def to_probs(int_tensor):
@@ -240,27 +241,25 @@ vocabulary, clean_data = traindata()
 dim = len(vocabulary)
 max_context = 10
 model = NN(dim)
-optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
 
 dataset = CustomDataset(clean_data)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=5)
 
 
-for i in dataset[0]:
-  for word in i: print(f'{vocabulary[word]} {word}')
-input()
-
 for i, (x, y) in enumerate(dataloader):#ОБУЧЕНИЕ
   output,outputs=model(x)
   y_probs=to_probs(y)
-  for i in output[0]: print(vocabulary[i])
+  print('ВЫВОД GPT')
+  for word in output[0]: print(f'{vocabulary[word]} {word}')
   loss = loss_c(outputs, y_probs)
   optimizer.zero_grad()
   loss.backward()
   optimizer.step()
-  if i % 10 ==0:
-      print('Train Epoch: [{}/{}], Loss {:.4f}'.format
+  if i % 100 ==0:
+    print('Train Epoch: [{}/{}], Loss {:.4f}'.format
    (i+1, len(dataloader), loss))
+      input()
 
 
 # ВВОД
@@ -291,11 +290,15 @@ for iteration in range(epochs):
 
 
 
-
-
+# Модель image-to-image
 
 import torch
 import torch.nn as nn
+import numpy as np
+from PIL import Image
+from glob import glob
+import os
+
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 from torchsummary import summary
@@ -304,7 +307,7 @@ class NN(nn.Module):
     def __init__(self, ch_num1, ch_num2):
         super(NN,self).__init__()
         self.ch_num2 = ch_num2
-        self.conv1 = nn.Conv2d(ch_num1, ch_num2, (2,2), stride=2) 
+        self.conv1 = nn.Conv2d(ch_num1, ch_num2, (2,2), stride=2)
         self.conv2 = nn.Conv2d(ch_num2, ch_num2*2, (2,2), stride=2)
         self.conv3 = nn.Conv2d(ch_num2*2, ch_num2*4, (2,2), stride=2)
         self.convt1 = nn.ConvTranspose2d(ch_num2*4, ch_num2*2, (2,2), stride=2)
@@ -332,12 +335,13 @@ class NN(nn.Module):
         m1 = self.convt2(n2)
         #m2 = torch.cat([m2, n3], 1)
         #m2 = self.conv2(m2)
+        m1 = nn.BatchNorm2d(self.ch_num2*2, affine=False, track_running_stats=False)(m1)
         m1 = nn.ReLU()(m1)
-        #m1 = nn.BatchNorm2d(self.ch_num2*8, affine=False, track_running_stats=False)(m1)
         m1 = self.uppool_1(m1)
         print(f'Decoder 1 {m1.size()}')
 
         m1 = self.convt3(m1)
+        m1 = nn.BatchNorm2d(self.ch_num2*2, affine=False, track_running_stats=False)(m1)
         m1 = nn.ReLU()(m1)
         m1 = self.uppool_1(m1)
         print(f'Decoder 2 {m1.size()}')
@@ -353,54 +357,40 @@ transform = transforms.Compose(list_of_transformations)
 model=NN(1,2)
 summary(model,((1,256,256)))
 
-#DATASET1
-#L__train
-#¦   L__ Cat
-#¦   L__ Dog
-
-train_dataset = ImageFolder(root="new_data/train", transform=transform)
-val_dataset = ImageFolder(root="new_data/test", transform=transform)
-batch_size = 50
-num_workers = 2
-load_Train = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, 
-             shuffle=True, num_workers=num_workers)
-load_Test = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, 
-            shuffle = False, num_workers=num_workers)
-
-
-
 #DATASET UNIVERS
-#class CustomDataset(torch.utils.data.Dataset):
-#    def __init__(self, image_pairs,transform):
-#        self.image_pairs = image_pairs
-#        self.transform = transform
-#
-#    def __len__(self):
-#        return len(self.image_pairs)
-#
-#    def __getitem__(self, idx):
-#        img1_path, img2_path = self.image_pairs[idx]
-#        img1 = Image.open(img1_path).convert('RGB')  
-#        img2 = Image.open(img2_path).convert('RGB')
-#        img1 = self.transform(img1)
-#        img2 = self.transform(img2)
-#        return img1, img2
-#train_x = sorted(glob(os.path.join(train_path, "image", "*png")))#возвращает 2 массива путей
-#train_y = sorted(glob(os.path.join(train_path, "mask", "*png")))
-#train_x, train_y = shuffle(train_x, train_y, random_state=42) # перемешивание
-#image_pairs = np.hstack((train_x, train_y))
+class CustomDataset(torch.utils.data.Dataset):
+    def __init__(self, image_pairs,transform):
+        self.image_pairs = image_pairs
+        self.transform = transform
 
-#train_dataset = CustomDataset(image_pairs, transform=transform)
-#val_dataset = CustomDataset(image_pairs, transform=transform)
+    def __len__(self):
+        return len(self.image_pairs)
 
-#load_Train = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, 
-             shuffle=True, num_workers=num_workers)
-#load_Test = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, 
-            shuffle = False, num_workers=num_workers)
+    def __getitem__(self, idx):
+        x_path, y_path = self.image_pairs[0][idx],  self.image_pairs[1][idx]
+        print(x_path, y_path)
+        x = Image.open(x_path).convert('RGB')  
+        y = Image.open(y_path).convert('RGB')
+        x = self.transform(x)
+        y = self.transform(y)
+        return x, y
+
+train_path = ''
+train_x = sorted(glob(os.path.join(train_path, "image*")))#возвращает 2 массива путей
+train_y = sorted(glob(os.path.join(train_path, "mask*")))
+
+image_pairs = np.vstack((train_x, train_y))
+
+train_dataset = CustomDataset(image_pairs, transform=transform)
+print(train_dataset[0])
+val_dataset = CustomDataset(image_pairs, transform=transform)
+
+load_Train = torch.utils.data.DataLoader(train_dataset, batch_size=1, 
+             shuffle=True, num_workers=2)
+load_Test = torch.utils.data.DataLoader(val_dataset, batch_size=1, 
+            shuffle = False, num_workers=2)
 
 
-NN = NN(64, 128)
-print(NN)
 optimizer = optim.Adam(Gen.parameters(), lr=2e-4, betas=(0.5, 0.999))
 epochs = 5
 
@@ -421,3 +411,42 @@ for ep in range(epochs):
                 print('Train Epoch: [{}/{}], Loss {:.4f}, Accuracy: {:.2f}%'.format
                 (ep+1, epochs, loss.data[0], correct / total * 100))
 torch.save(NN.state_dict(), 'conv_net_model.ckpt')
+
+
+
+
+
+
+
+
+# Reinforcement агента с многопараметровым действием (движение руки)
+
+# def select_action(state, epsilon=0.6, model):
+#    if random.random() < epsilon:
+#        return random.randint(0, num_actions - 1)  # Случайное действие
+#    else:
+#        with torch.no_grad():
+#            return model(state).argmax().item()  # Жадное действие
+
+# def select_multiple_action(x, model):
+#    with torch.no_grad():
+#        y = model(x)
+#        action = torch.multinomial(y, 1).item()
+#    return action
+
+
+
+# y=select_action(state=x, model)# выбор случайного действия
+# y_probs=to_probs(y)
+
+# y, x_after=model(x) #робот возвращает вид с камеры
+# grade=reward_model(x_after) # оценка вида с камеры
+
+# epsilon=0.2
+# ratio = torch.exp(y - old_y) #PPO, чтобы отношение не выходило за пределы [1-e, 1+e]
+# clipped_ratio = torch.clamp(ratio, 1 - epsilon, 1 + epsilon)
+
+# loss = -torch.min(ratio * grade, clipped_ratio * grade).mean()
+# optimizer.zero_grad()
+# loss.backward()
+# optimizer.step()
