@@ -62,7 +62,7 @@ class NN(nn.Module):
     outputs =  torch.empty(dim)
     for i in range(max_context//2-1):#!!!ОСНОВНОЙ ПРИКОЛ ТРАНСФОРМЕРА - ЦИКЛ
       #ENCODER
-      y=self.embeddings(x)
+      y=self.embeddings(current_sequence)
       a,b = self.att(y,y,y)
       a = a + y
       b1 = nn.LayerNorm(self.dim)(a)
