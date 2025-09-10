@@ -1,52 +1,3 @@
-# Трансформер-НС
-#кодирование
-
-#матрицы внимания1
-#матрицы внимания2
-#конкатенация
-#forward_prop_A
-#batch_norm
-
-#forward_prop_1
-#forward_prop_2
-#batch_norm
-
-#матрицы внимания1
-#матрицы внимания2
-#конкатенация
-#forward_prop_A
-#batch_norm
-
-#матрицы внимания1(кодер)
-#матрицы внимания2(кодер)
-#конкатенация
-#forward_prop_A
-#batch_norm
-
-#forward_prop_1
-#forward_prop_2
-#batch_norm
-
-#forward_prop_3
-#softmax
-
-	int a = 5;
-	int* a1 = &a;
-	std::cout << *a1 << '\t' << a1;
-
-# Word2Vec — это метод представления слов в виде векторов, который позволяет 
-# захватывать семантические и синтаксические особенности слов.
-# Состоит из матриц длиной vocab x embed_dim.
-# Существует два способа обучения Word2Vec:
-# CBOW (Continuous Bag of Words) — предсказывает одно слово по многим.
-# Skip-gram — предсказывает многие слова по одному.
-
-
-# Метрики безопасности-среднее время реагирования на инцидент, процент покрытия систем,
-# скорость восстановления, срок и точку восстановления данных
-# Конференция 2023 (уязвимости перехвата СМС, ультразвуковой взлом Умных док-станций)
-
-
 # Определение нейронной сети
 import torch
 import torch.nn as nn
@@ -71,7 +22,7 @@ class CustomDataset(Dataset):
 		zeros=torch.zeros(yt.size(0)//2, dtype=torch.int64)
 		xt = torch.cat([xt1, zeros],dim=0)
 		return xt,xt2
-    #return torch.tensor(self.data[idx*2], dtype=torch.long), torch.tensor(self.data[idx+1], dtype=torch.long)
+
 
 class Attention(nn.Module):
    def __init__(self, vocab_size, dim):
@@ -99,24 +50,19 @@ class NN(nn.Module):
        self.dim = dim
        self.a_dim = dim // 2
        self.max_context=max_context
-       self.w2v = nn.Embedding(self.dim, self.a_dimembedding_dim)
-       self.att1 = Attention(self.dim, self.a_dim)
-       self.att2 = Attention(self.dim, self.a_dim)
-       self.a_linear = nn.Linear(self.a_dim, self.dim)
+       self.embeddings = nn.Embedding(self.dim, self.a_dim)
+       self.att = nn.MultiheadAttention(self.dim, 1)
+       # self.a_linear = nn.Linear(self.a_dim, self.dim)
        self.linear1 = nn.Linear(self.dim, self.dim//2)
        self.linear2 = nn.Linear(self.dim//2, self.dim)
        self.linear3 = nn.Linear(self.dim, self.dim)
-       self.att = nn.MultiheadAttention(self.dim, 1)
+
    def forward(self, x):
     current_sequence = x.clone()#ИСПРАВЛЕНИЕ!
     outputs =  torch.empty(dim)
     for i in range(max_context//2-1):#!!!ОСНОВНОЙ ПРИКОЛ ТРАНСФОРМЕРА - ЦИКЛ
       #ENCODER
-      y=self.w2v(x)
-      # a1 = self.att1(y,y)
-      # a2 = self.att2(y,y)
-      # a = torch.cat([a1, a2], dim=-1)#dim -1 для w2v
-      # a = self.a_linear(a)
+      y=self.embeddings(x)
       a,b = self.att(y,y,y)
       a = a + y
       b1 = nn.LayerNorm(self.dim)(a)
@@ -258,182 +204,6 @@ for iteration in range(epochs):
  input()
  output = model(tensor)
  print (f"ITERATION {iteration}: ")
- print(f'original {tensor}')
- print(f'modif {output}')
+ print(f'input {tensor}')
+ print(f'output {output}')
  print ("----")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Модель image-to-image
-
-import torch
-import torch.nn as nn
-import numpy as np
-from PIL import Image
-from glob import glob
-import os
-
-from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
-from torchsummary import summary
-
-class NN(nn.Module):
-    def __init__(self, ch_num1, ch_num2):
-        super(NN,self).__init__()
-        self.ch_num2 = ch_num2
-        self.conv1 = nn.Conv2d(ch_num1, ch_num2, (2,2), stride=2)
-        self.conv2 = nn.Conv2d(ch_num2, ch_num2*2, (2,2), stride=2)
-        self.conv3 = nn.Conv2d(ch_num2*2, ch_num2*4, (2,2), stride=2)
-        self.convt1 = nn.ConvTranspose2d(ch_num2*4, ch_num2*2, (2,2), stride=2)
-        self.convt2 = nn.ConvTranspose2d(ch_num2*2, ch_num2, (2,2), stride=2)
-        self.convt3 = nn.ConvTranspose2d(ch_num2, ch_num1, (2,2), stride=2)
-        self.pool_1 = nn.MaxPool2d((2, 2), stride=2)
-        self.uppool_1 = nn.Upsample(scale_factor=2, mode='bilinear')
-    def forward(self,x):
-        #ENCODER
-        print(f'Start {x.size()}')
-        n1 = self.conv1(x)
-        n1 = nn.BatchNorm2d(self.ch_num2, affine=False, track_running_stats=False)(n1)
-        n1 = nn.ReLU()(n1)
-        n1 = self.pool_1(n1)
-        print(f'Encoder 1 {n1.size()}')
-        #здесь иногда Attention
-
-        n2 = self.conv2(n1)
-        n2 = nn.BatchNorm2d(self.ch_num2*2, affine=False, track_running_stats=False)(n2)
-        n2 = nn.ReLU()(n2)
-        n2 = self.pool_1(n2)
-        print(f'Encoder 2 {n2.size()}')
-
-        #DECODER
-        m1 = self.convt2(n2)
-        #m2 = torch.cat([m2, n3], 1)
-        #m2 = self.conv2(m2)
-        m1 = nn.BatchNorm2d(self.ch_num2*2, affine=False, track_running_stats=False)(m1)
-        m1 = nn.ReLU()(m1)
-        m1 = self.uppool_1(m1)
-        print(f'Decoder 1 {m1.size()}')
-
-        m1 = self.convt3(m1)
-        m1 = nn.BatchNorm2d(self.ch_num2*2, affine=False, track_running_stats=False)(m1)
-        m1 = nn.ReLU()(m1)
-        m1 = self.uppool_1(m1)
-        print(f'Decoder 2 {m1.size()}')
-        return nn.Tanh()(m1)
-
-
-list_of_transformations = [
-    transforms.Resize((256,256)),
-    transforms.ToTensor(),
-]
-transform = transforms.Compose(list_of_transformations)
-
-model=NN(1,2)
-summary(model,((1,256,256)))
-
-#DATASET UNIVERS
-class CustomDataset(torch.utils.data.Dataset):
-    def __init__(self, image_pairs,transform):
-        self.image_pairs = image_pairs
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.image_pairs)
-
-    def __getitem__(self, idx):
-        x_path, y_path = self.image_pairs[0][idx],  self.image_pairs[1][idx]
-        print(x_path, y_path)
-        x = Image.open(x_path).convert('RGB')  
-        y = Image.open(y_path).convert('RGB')
-        x = self.transform(x)
-        y = self.transform(y)
-        return x, y
-
-train_path = ''
-train_x = sorted(glob(os.path.join(train_path, "image*")))#возвращает 2 массива путей
-train_y = sorted(glob(os.path.join(train_path, "mask*")))
-
-image_pairs = np.vstack((train_x, train_y))
-
-train_dataset = CustomDataset(image_pairs, transform=transform)
-print(train_dataset[0])
-val_dataset = CustomDataset(image_pairs, transform=transform)
-
-load_Train = torch.utils.data.DataLoader(train_dataset, batch_size=1, 
-             shuffle=True, num_workers=2)
-load_Test = torch.utils.data.DataLoader(val_dataset, batch_size=1, 
-            shuffle = False, num_workers=2)
-
-
-optimizer = optim.Adam(Gen.parameters(), lr=2e-4, betas=(0.5, 0.999))
-epochs = 5
-
-for ep in range(epochs):
-    for i, (x_data, y_data) in enumerate(load_Train):
-        output = NN(x_data)
-        loss = nn.NLLLoss(ouptut, y_data)
-
-        total = y_data.size(0)
-        _, predicted = torch.max(output.data, 1)
-        correct = (predicted == y_data).sum().item()
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if i % 50 == 0:
-                print('Train Epoch: [{}/{}], Loss {:.4f}, Accuracy: {:.2f}%'.format
-                (ep+1, epochs, loss.data[0], correct / total * 100))
-torch.save(NN.state_dict(), 'conv_net_model.ckpt')
-
-
-
-
-
-
-
-
-# Reinforcement агента с многопараметровым действием (движение руки)
-
-# def select_action(state, epsilon=0.6, model):
-#    if random.random() < epsilon:
-#        return random.randint(0, num_actions - 1)  # Случайное действие
-#    else:
-#        with torch.no_grad():
-#            return model(state).argmax().item()  # Жадное действие
-
-# def select_multiple_action(x, model):
-#    with torch.no_grad():
-#        y = model(x)
-#        action = torch.multinomial(y, 1).item()
-#    return action
-
-
-
-# y=select_action(state=x, model)# выбор случайного действия
-# y_probs=to_probs(y)
-
-# y, x_after=model(x) #робот возвращает вид с камеры
-# grade=reward_model(x_after) # оценка вида с камеры
-
-# epsilon=0.2
-# ratio = torch.exp(y - old_y) #PPO, чтобы отношение не выходило за пределы [1-e, 1+e]
-# clipped_ratio = torch.clamp(ratio, 1 - epsilon, 1 + epsilon)
-
-# loss = -torch.min(ratio * grade, clipped_ratio * grade).mean()
-# optimizer.zero_grad()
-# loss.backward()
-# optimizer.step()
