@@ -76,23 +76,22 @@ for i in range(i_s):
 
 	index = 0
 	for i, m in zip(X, Y):
-            try:
-                aug = CenterCrop(H, W, p=1.0)
-                augmented = aug(image=i, mask=m)
-                i = augmented["image"]
-                m = augmented["mask"]
+		
+		crop = CenterCrop(H, W, p=1.0)
+		augmented = crop(image=i, mask=m)
+		i = augmented["image"]
+		m = augmented["mask"]
+		i = cv2.resize(i, (W, H))
+		m = cv2.resize(m, (W, H))
 
-            except Exception as e:
-                i = cv2.resize(i, (W, H))
-                m = cv2.resize(m, (W, H))
+		x_name = f"{name}_{index}.png"
+		y_name = f"{name}_{index}.png"
 
-            tmp_image_name = f"{name}_{index}.png"
-            tmp_mask_name = f"{name}_{index}.png"
+		x_path = os.path.join(save_path, "image", x_name)
+		y_path = os.path.join(save_path, "mask", y_name)
 
-            image_path = os.path.join(save_path, "image", tmp_image_name)
-            mask_path = os.path.join(save_path, "mask", tmp_mask_name)
+		cv2.imwrite(x_path, i)
+		cv2.imwrite(y_path, m)
 
-            cv2.imwrite(image_path, i)
-            cv2.imwrite(mask_path, m)
 
-            index += 1
+		index += 1
