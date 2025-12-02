@@ -16,33 +16,11 @@ class CustomDataset(Dataset):
 
 	def __getitem__(self, idx):
 		y = self.data[idx]
-		y_int = to_pretensor(y)
-		yt = to_tensor(y_int)
-		xt1,xt2=yt.split(yt.size(0)//2)
-		zeros=torch.zeros(yt.size(0)//2, dtype=torch.int64)
+		xt1,xt2=y.split(y.size(0)//2)
+		zeros=torch.zeros(y.size(0)//2, dtype=torch.int64)
 		xt = torch.cat([xt1, zeros],dim=0)
 		return xt,xt2
 
-
-class Attention(nn.Module):
-   def __init__(self, vocab_size, dim):
-       super(Attention,self).__init__()
-       self.a_dim = dim
-       self.K = nn.Linear(vocab_size, dim)
-       self.V = nn.Linear(vocab_size, dim)
-       self.Q = nn.Linear(vocab_size, dim)
-       self.softmax = nn.Softmax(dim=0)
-   def forward(self,x,xo):
-       n1 = self.K(xo)
-       n2 = self.V(xo)
-       n3 = self.Q(x)
-       n4 = n3 * n1
-       n4 = n4 / math.sqrt(dim)
-# МАСКА ИСПОЛЬЗУЕТСЯ ПРИ ОБУЧЕНИИ
-       n4 = self.softmax(n4)
-       n4 = n4 * n2
-       #output = scatter(n4.unsqueeze(-1) * n2, dim=0, dim_size=n2.size(0), reduce='sum')#РАЗРЕЖЕННОЕ ВНИМАНИЕ (РАСПАРАЛЛЕЛ И ОТБРОС)
-       return n4
 
 class NN(nn.Module):
    def __init__(self, dim, max_context):
@@ -65,7 +43,6 @@ class NN(nn.Module):
    def forward(self, x):
 
     current_sequence = x.clone()#ИСПРАВЛЕНИЕ!
-    outputs_list =  []
 
     for i in range(self.max_context):#!!!ОСНОВНОЙ ПРИКОЛ ТРАНСФОРМЕРА - ЦИКЛ
       #ENCODER
@@ -99,8 +76,6 @@ class NN(nn.Module):
       output = self.linear3(b)
       output =self.sigmoid(output)
 
-      outputs_list.append(output[0])
-
       next_token = torch.argmax(output[0], dim=-1)
       zero_position=(current_sequence == 0).nonzero(as_tuple=True)[0]#адрес первого нуля
       if len(zero_position) > 0:
@@ -110,7 +85,7 @@ class NN(nn.Module):
       if next_token==vocabulary.index("EOS"): break
       if current_sequence[-1]!=0: break
 
-    return current_sequence, outputs_list;
+    return current_sequence;
 
 
 def to_pretensor(s): # Получение int
@@ -125,8 +100,7 @@ def to_pretensor(s): # Получение int
 
 def to_tensor(not_tensor): # Получение int64
 
-  np_tensor=np.array(not_tensor, dtype=np.int64)#int64
-  tensor = torch.from_numpy(np_tensor)
+  tensor = torch.tensor(not_tensor, dtype=torch.int64)
 
   example=torch.zeros(max_context) # Заполнение нулями
   tensor=nn.utils.rnn.pad_sequence([tensor,example]).T[0]
@@ -169,10 +143,14 @@ vocabulary = [
 ]
 
 vocabulary, clean_data = traindata()
+int_data = []
+for elem in clean_data:
+  int_data.append ( to_tensor(to_pretensor(elem)) )
+
+
 dim = len(vocabulary)
 max_context = 10
 epochs = 10
-
 
 
 model = NN(dim, max_context)
@@ -180,32 +158,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 
-# ОСНОВНОЕ ОБУЧЕНИЕ
-# optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
-# loss_c = nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+loss_c = nn.CrossEntropyLoss()
 
-# dataset = CustomDataset(clean_data)
-# dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=5)
-
-
-# for i, (x, y) in enumerate(dataloader):#ОБУЧЕНИЕ
-#   print(x)
-#   output,outputs=model(x)
-#   y_probs=to_probs(y)
-#   print('Output')
-#   for word in output[0]: print(f'{vocabulary[word]} {word}')
-#   loss = loss_c(outputs, y_probs)
-#   optimizer.zero_grad()
-#   loss.backward()
-#   optimizer.step()
-#   if i % 100 ==0:
-#     print('Train Epoch: [{}/{}], Loss {:.4f}'.format
-#    (i+1, len(dataloader), loss))
-#     input()
-
-
-
-
+dataset = CustomDataset(int_data)
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=5)
 
 
 # ВВОД
@@ -218,6 +175,8 @@ for iteration in range(epochs):
 
 
 
-    output, outputs = model(tensor)
+    output = model(tensor)
     print(f'Output {output}')
+    for word in output: print(f'{vocabulary[word]} {word}')
     print ("----")
+
