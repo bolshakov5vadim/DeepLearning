@@ -82,12 +82,8 @@ class NN(nn.Module):
 
     def _forward_generate(self, x):
 
-        outputs_list =  []
-
         for i in range(self.max_context):#!!!ОСНОВНОЙ ПРИКОЛ ТРАНСФОРМЕРА - ЦИКЛ
           output = self._forward_train(x)
-
-          outputs_list.append(output[0])
 
           next_token = torch.argmax(output[0], dim=-1)
           zero_position=(x == 0).nonzero(as_tuple=True)[0]#адрес первого нуля
@@ -98,7 +94,7 @@ class NN(nn.Module):
           if next_token==vocabulary.index("EOS"): break
           if x[-1]!=0: break
 
-        return x, torch.stack(outputs_list);
+        return x;
 
 
 def to_pretensor(s): # Получение int
@@ -191,7 +187,7 @@ for j in range(epochs):
   optimizer.step()
   if i % 100 ==0:
     print('Train Epoch {}: [{}/{}], Loss {:.4f}'.format
-   (j+1, i+1, len(dataloader), loss))
+   (j, i+1, len(dataloader), loss))
     
 
 # ВВОД
@@ -202,7 +198,7 @@ for test in range(tests):
     print (f"TEST {test}/{tests}: ")
     print(f'Input {tensor}')
 
-    output, outputs = model(tensor, generation_mode=True)
+    output = model(tensor, generation_mode=True)
     print(f'Output {output}')
     for word in output: print(f'{vocabulary[word]} {word}')
     print ("----")
