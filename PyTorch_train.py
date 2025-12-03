@@ -1,3 +1,4 @@
+
 import torch
 import torch.nn as nn
 from torchsummary import summary
@@ -154,16 +155,17 @@ vocabulary = [
     "c",
 ]
 
+
+max_context = 10
+epochs = 3
+tests = 10
+
+
 vocabulary, clean_data = traindata()
 int_data = []
 for elem in clean_data:
   int_data.append ( to_tensor(to_pretensor(elem)) )
-
-
 dim = len(vocabulary)
-max_context = 10
-epochs = 10
-
 
 
 model = NN(dim, max_context)
@@ -176,7 +178,8 @@ loss_c = nn.CrossEntropyLoss()
 dataset = CustomDataset(int_data)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=5)
 
-for i, (x, y) in enumerate(dataloader):#ОБУЧЕНИЕ
+for j in range(epochs): 
+ for i, (x, y) in enumerate(dataloader):#ОБУЧЕНИЕ
   output=model(x)
   y_probs=to_probs(y)
   #print(f'Output {output[0][0]}') # Вывод-матрица. Берем первую строку
@@ -187,20 +190,22 @@ for i, (x, y) in enumerate(dataloader):#ОБУЧЕНИЕ
   loss.backward()
   optimizer.step()
   if i % 100 ==0:
-    print('Train Epoch: [{}/{}], Loss {:.4f}'.format
-   (i+1, len(dataloader), loss))
+    print('Train Epoch {}: [{}/{}], Loss {:.4f}'.format
+   (j+1, i+1, len(dataloader), loss))
     
 
-
 # ВВОД
-for iteration in range(epochs):
+for test in range(tests):
     s = input()
     pretensor = to_pretensor(s)
     tensor=to_tensor(pretensor)
-    print (f"ITERATION {iteration}: ")
+    print (f"TEST {test}/{tests}: ")
     print(f'Input {tensor}')
 
     output, outputs = model(tensor, generation_mode=True)
     print(f'Output {output}')
     for word in output: print(f'{vocabulary[word]} {word}')
     print ("----")
+
+
+torch.save(model, "model.pt")
