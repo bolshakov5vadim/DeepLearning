@@ -2,19 +2,15 @@ from selenium.webdriver.common.keys import Keys#websocket
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-import requests
-import random, string#‰Îˇ Ì‡Á‚‡ÌËÈ Ù‡ÈÎÓ‚
-import time#‰Îˇ ÓÊË‰‡ÌËˇ ÔÓ‰Á‡„ÛÁÍË
-import os#‰Îˇ Á‡ÔËÒË Ù‡ÈÎÓ‚
+import requests # –¥–ª—è —Å–∫–∞—á–∏–≤–∞–Ω–∏—è —Ñ–æ—Ç–æ
+import random, string # –¥–ª—è –Ω–∞–∑–≤–∞–Ω–∏–π —Ñ–∞–π–ª–æ–≤
+import time # –¥–ª—è –æ–∂–∏–¥–∞–Ω–∏—è –ø–æ–¥–∑–∞–≥—Ä—É–∑–∫–∏
+import os # –¥–ª—è –∑–∞–ø–∏—Å–∏ —Ñ–∞–π–ª–æ–≤
 
 
 def download(url, path):
-
-    # ÂÒÎË ÔÛÚ¸ ÌÂ ÒÛ˘ÂÒÚ‚ÛÂÚ, Ò‰ÂÎ‡Ú¸ ˝ÚÓÚ ÔÛÚ¸
-    if not os.path.isdir(path):
-        os.makedirs(path)
-        
-    letters = string.ascii_lowercase#ËÏˇ Ù‡ÈÎ‡
+     
+    letters = string.ascii_lowercase # –∏–º—è —Ñ–∞–π–ª–∞
     filename = ''.join(random.choice(letters) for i in range(10))
     filename =  path+'/'+filename+'.png'
     try:
@@ -25,7 +21,7 @@ def download(url, path):
     with open(filename, "wb") as f:
             f.write(response.content)
     
-#chromedriver.exe ƒŒÀ∆≈Õ —Œ¬œ¿ƒ¿“‹ — ¬≈–—»≈… ¡–¿”«≈–¿
+#chromedriver.exe –î–û–õ–ñ–ï–ù –°–û–í–ü–ê–î–ê–¢–¨ –° –í–ï–†–°–ò–ï–ô –ë–†–ê–£–ó–ï–†–ê
 
 print("Pinterest_parser_v2.0.")
 print("Print url.")
@@ -37,20 +33,20 @@ limit=input()
 limit=int(limit)
 
 
-driver = webdriver.Chrome()#˜ÚÓ Ì‡ÔËÒ‡ÌÓ ‚ ÒÍÓ·Í‡ı Õ≈ ¬Œ—œ–»Õ»Ã¿≈“
-driver.get(url)#Ì‡ÒÚÓËÎË ˝ÏÛÎˇÚÓ yandex
+driver = webdriver.Chrome()
+driver.get(url)# –ù–∞—Å—Ç—Ä–æ–∏–ª–∏ —ç–º—É–ª—è—Ç–æ—Ä
         
-i=0#ÎÓÏ‡ÂÚ ˆËÍÎ ÂÒÎË ÍÓÌÂˆ ÒÚ‡ÌËˆ˚
+i=0 # –°–ª–æ–º–∞–µ—Ç —Ü–∏–∫–ª –µ—Å–ª–∏ –∫–æ–Ω–µ—Ü —Å—Ç—Ä–∞–Ω–∏—Ü—ã
 old=0
 
-while True:#ˆËÍÎ PAGE_DOWN
+while True: # —Ü–∏–∫–ª PAGE_DOWN
         
-            html = driver.page_source#ÍÓ‰ ÒÚ‡ÌËˆ˚
-            soup = BeautifulSoup(html, "html.parser")#ÍÓ‰ ÒÚ‡ÌËˆ˚
+            html = driver.page_source # –ø–æ–ª—É—á–∏—Ç—å –∫–æ–¥ —Å—Ç—Ä–∞–Ω–∏—Ü—ã
+            soup = BeautifulSoup(html, "html.parser") # —Ä–∞—Å–ø–∞—Ä—Å–∏—Ç—å
 
-            img_tags = soup.findAll('img')#ËÌÓ„‰‡ ÌË˜Â„Ó ÌÂ Ì‡ıÓ‰ËÚ 
+            img_tags = soup.findAll('img') # –Ω–∞–π—Ç–∏ –∫–∞—Ä—Ç–∏–Ω–∫–∏
             
-            for obj in img_tags: #YA
+            for obj in img_tags: # –°–æ—Ö—Ä–∞–Ω–∏—Ç—å –≤—Å–µ URL
                     str_img=str(obj.get("src"))
                     if str_img.find('https:')==-1:str_img='https:'+str_img
                     if str_img not in urls: urls.append(str_img)
@@ -58,23 +54,30 @@ while True:#ˆËÍÎ PAGE_DOWN
 
             html = driver.find_element(By.TAG_NAME, 'html')
             html.send_keys(Keys.PAGE_DOWN)
-            # œ˚ÊÓÍ ‚ÌËÁ.
-            
+            # –ù–∞–∂–∞—Ç—å –∫–Ω–æ–ø–∫—É PAGE DOWN
+
+            #–ï—Å–ª–∏ focus-trap, —É–¥–∞–ª–∏—Ç—å
+            # try:
+            #     trap_element = driver.find_element(By.CSS_SELECTOR, "trap_focus")
+            #     if (trap_element != None): driver.execute_script("arguments.remove();", trap_element)       
+            # except Exception as e: print(e)
+
             print(f"Links: {len(urls)}")
 
-            #ÓÊË‰‡ÌËÂ Á‡„ÛÁÍË
+            # –û–∂–∏–¥–∞–Ω–∏–µ –∑–∞–≥—Ä—É–∑–∫–∏
             time.sleep(0.5)
 
-            #Ì‡Ê‡ÚËÂ ÍÌÓÔÍË ˇÌ‰ÂÍÒ
+            # –ù–∞–∂–∞—Ç–∏–µ –∫–Ω–æ–ø–æ–∫
             #button = driver.find_element_by_class_name("button2 button2_size_l button2_theme_action button2_type_link button2_view_classic more__button i-bem button2_js_inited")
             #if (button.size() > 0 && button.get(0).isDisplayed()): button.click()
+            
             print(f"Links: {len(urls)}")
 
-            i += 1#ÎÓÏ‡ÂÚ ˆËÍÎ ÂÒÎË ÍÓÌÂˆ ÒÚ‡ÌËˆ˚
             if (len(urls)>limit):
-                print("len(urls) stabled")
+                print("len(urls) more, then requested")
                 break
             
+            i += 1 # –ü—Ä–æ–≤–µ—Ä–∫–∞ –∫–∞–∂–¥—ã–µ 8 –Ω–∞–∂–∞—Ç–∏–π
             if i % 8 == 0: 
                 if (len(urls) == old):
                     print("len(urls) stabled")
@@ -82,8 +85,11 @@ while True:#ˆËÍÎ PAGE_DOWN
                 old = len(urls)  
     
     
-log=0
-for url in urls:
-    download(url, "folder")
-    log+=1
-    print(f"Downloaded {log}/{len(urls)} images")
+# –µ—Å–ª–∏ –ø—É—Ç—å –Ω–µ —Å—É—â–µ—Å—Ç–≤—É–µ—Ç, —Å–æ–∑–¥–∞—Ç—å
+path = "folder"
+if not os.path.isdir(path):
+    os.makedirs(path)
+
+for i, url in enumerate(urls):
+    download(url, path)
+    print(f"Downloaded {i}/{len(urls)} images")
