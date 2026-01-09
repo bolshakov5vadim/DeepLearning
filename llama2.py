@@ -3,6 +3,9 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling
 
 from huggingface_hub import snapshot_download
+# Для использования Llama зарегистрируйтесь в HuggingFace, получите токен
+# Введите в терминал
+# hf auth login --token $HUGGINGFACE_TOKEN
 
 from datasets import Dataset
 import numpy as np
