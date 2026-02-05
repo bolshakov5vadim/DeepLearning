@@ -154,7 +154,7 @@ vocabulary = [
 
 max_context = 10
 epochs = 3
-tests = 10
+tests = 3
 
 
 vocabulary, clean_data = traindata()
