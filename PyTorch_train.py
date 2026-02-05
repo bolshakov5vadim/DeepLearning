@@ -13,14 +13,14 @@ class CustomDataset(Dataset):
 		self.data = data
 
 	def __len__(self):
-		return len(self.data)//2
+		return len(self.data)-6
 
 	def __getitem__(self, idx):
-		y = self.data[idx]
-		xt1,xt2=y.split(y.size(0)//2)
-		zeros=torch.zeros(y.size(0)//2, dtype=torch.int64)
-		xt = torch.cat([xt1, zeros],dim=0)
-		return xt,xt2
+		x_t = self.data[idx:(idx+5)]
+		pad=torch.zeros(max_context-x_t.size(0), dtype=torch.int64)
+		x = torch.cat([x_t, pad],dim=0)
+		y = self.data[idx+6]
+		return x, y
 
 
 class NN(nn.Module):
@@ -71,9 +71,9 @@ class NN(nn.Module):
         decoder2 = self.layer_norm4(decoder2)
 
         #BOTTLENECK
-        b = self.linear1(decoder2)
+        b = self.linear1(decoder1)
         b = self.linear2(b)
-        b = b + decoder2
+        b = b + decoder1
         b = self.layer_norm5(b)
 
         output = self.linear3(b)
@@ -99,30 +99,17 @@ class NN(nn.Module):
 
 def to_pretensor(s): # Получение int
   not_tensor = []
-  inputt=s.split(" ")
-  for word in inputt:
-    if len(not_tensor)==max_context: return not_tensor # Обрезка ввода до max_context//2
+  for word in s:
+    #if len(not_tensor)==max_context: return not_tensor # Обрезка ввода до max_context//2
     try:not_tensor.append(vocabulary.index(word)) # Обработка неизвестных слов
     except: print (word+" not in list")
   return not_tensor
 
 
-def to_tensor(not_tensor): # Получение int64
-
-  tensor = torch.tensor(not_tensor, dtype=torch.int64)
-
-  example=torch.zeros(max_context) # Заполнение нулями
-  tensor=nn.utils.rnn.pad_sequence([tensor,example]).T[0]
-
-  return tensor
-
-
 def to_probs(int_tensor):
-  probs = torch.zeros((max_context//2, dim))
-  i=0
+  probs = torch.zeros(dim)
   for j in int_tensor:
-    probs[i][j] = 1
-    i=+1
+    probs[j] = 1
   return probs
 
 
@@ -131,9 +118,8 @@ def traindata():
   data = myfile.read()
   raw_data=data.lower()
   raw_data="".join(ch for ch in raw_data if (ch.isalpha() or ch==" " or ch== ":"))
-  clean_data = raw_data.split("nperson" or ":")
-  vocabulary = raw_data.split(" " or "nperson" or ":")
-  vocabulary = list(set(vocabulary))
+  clean_data = raw_data.split(" " or "nperson" or ":")
+  vocabulary = list(set(clean_data))
   vocabulary.append("EOS")
   return vocabulary, clean_data
 
@@ -156,11 +142,16 @@ max_context = 10
 epochs = 3
 tests = 3
 
-
 vocabulary, clean_data = traindata() # Текст -> Датасет string 
-int_data = [] #  Датасет string -> Датасет int
-for elem in clean_data:
-  int_data.append ( to_tensor(to_pretensor(elem)) )
+print(clean_data)
+
+int_data = [] # Датасет string -> Датасет int
+int_data = to_pretensor(clean_data)
+print(int_data)
+
+ # Датасет int -> Датасет torch.int64
+data = torch.tensor(int_data, dtype=torch.int64)
+print(data)
 dim = len(vocabulary)
 
 
@@ -171,17 +162,25 @@ model.to(device)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
 loss_c = nn.CrossEntropyLoss()
 
-dataset = CustomDataset(int_data)
+dataset = CustomDataset(data)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=5)
 
 for j in range(epochs): 
  for i, (x, y) in enumerate(dataloader):#ОБУЧЕНИЕ
   output=model(x)
   y_probs=to_probs(y)
-  #print(f'Output {output[0][0]}') # Вывод-матрица. Берем первую строку
+  print(output)
+  print(y_probs)
+  #print(f'Output {output[0][0]}') # Убираем кавычки. Берем первую строку матрицы.
   #print(f'Target {y_probs[0]}')
   #print(f'{vocabulary[torch.argmax(output[0][0], dim=-1)]} {output}')
-  loss = loss_c(output[0][0], y_probs[0]) # Вывод-матрица. Берем первую строку
+  
+  # output[0][0]
+  # Означает: 
+  # -убираем кавычки матрицы
+  # -берем первую строку матрицы.
+  
+  loss = loss_c(output[0][0], y_probs) # Вывод-матрица. Берем первую строку
   optimizer.zero_grad()
   loss.backward()
   optimizer.step()
@@ -194,7 +193,7 @@ for j in range(epochs):
 for test in range(tests):
     s = input()
     pretensor = to_pretensor(s)
-    tensor=to_tensor(pretensor)
+    tensor=torch.tensor(pretensor, dtype=torch.int64)
     print (f"TEST {test}/{tests}: ")
     print(f'Input {tensor}')
 
