@@ -157,8 +157,8 @@ epochs = 3
 tests = 3
 
 
-vocabulary, clean_data = traindata()
-int_data = []
+vocabulary, clean_data = traindata() # Текст -> Датасет string 
+int_data = [] #  Датасет string -> Датасет int
 for elem in clean_data:
   int_data.append ( to_tensor(to_pretensor(elem)) )
 dim = len(vocabulary)
