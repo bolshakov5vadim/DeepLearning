@@ -5,6 +5,7 @@ from torchsummary import summary
 import numpy as np
 import random
 import math
+from collections import Counter
 from torch.utils.data import Dataset, DataLoader
 
 
@@ -27,18 +28,16 @@ class NN(nn.Module):
     def __init__(self, dim, max_context):
         super(NN, self).__init__()
         self.dim = dim
-        self.a_dim = dim // 2
+        self.e_dim = 512
         self.max_context=max_context
-        self.embeddings = nn.Embedding(self.dim, self.a_dim)
-        self.att = nn.MultiheadAttention(self.a_dim, 1)
-        self.linear1 = nn.Linear(self.a_dim, self.a_dim)
-        self.linear2 = nn.Linear(self.a_dim, self.a_dim)
-        self.linear3 = nn.Linear(self.a_dim, self.dim)
-        self.layer_norm1 = nn.LayerNorm(self.a_dim)
-        self.layer_norm2 = nn.LayerNorm(self.a_dim)
-        self.layer_norm3 = nn.LayerNorm(self.a_dim)
-        self.layer_norm4 = nn.LayerNorm(self.a_dim)
-        self.layer_norm5 = nn.LayerNorm(self.a_dim)
+        self.embeddings = nn.Embedding(self.dim, self.e_dim)
+        self.att = nn.MultiheadAttention(self.e_dim, 1)
+        self.linear1 = nn.Linear(self.e_dim, self.e_dim)
+        self.linear2 = nn.Linear(self.e_dim, self.e_dim)
+        self.linear3 = nn.Linear(self.e_dim, self.dim)
+        self.layer_norm1 = nn.LayerNorm(self.e_dim)
+        self.layer_norm2 = nn.LayerNorm(self.e_dim)
+        self.layer_norm3 = nn.LayerNorm(self.e_dim)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, generation_mode=False):
@@ -48,33 +47,23 @@ class NN(nn.Module):
           return self._forward_generate(x)
 
     def _forward_train(self, x):
-        #ENCODER
         y=self.embeddings(x)
+
+        #ENCODER1
         a,b = self.att(y,y,y)
         a = a + y
-        b1 = self.layer_norm1(a)
+        encod1 = self.layer_norm1(a)
 
-        #BOTTLENECK
-        m = self.linear1(b1)
-        m = self.linear2(m)
-        m = m + b1
-        encod = self.layer_norm2(m)
-
-        #DECODER1
-        a,b = self.att(encod,encod,encod) # Декодер=Энкодер+Энкодер с инпутом старого
-        decoder1 = a + encod
-        decoder1 = self.layer_norm3(decoder1) # Вычитание среднего+обучаемые параметры
-
-        #DECODER2
-        a,b = self.att(decoder1,decoder1,encod)
-        decoder2 = a + decoder1
-        decoder2 = self.layer_norm4(decoder2)
+        #ENCODER2
+        a,b = self.att(encod1,encod1,encod1) # Декодер=Энкодер+Энкодер с инпутом старого
+        decoder1 = a + encod1
+        decoder1 = self.layer_norm2(decoder1) # Вычитание среднего+обучаемые параметры
 
         #BOTTLENECK
         b = self.linear1(decoder1)
         b = self.linear2(b)
         b = b + decoder1
-        b = self.layer_norm5(b)
+        b = self.layer_norm3(b)
 
         output = self.linear3(b)
         output =self.sigmoid(output)
@@ -142,14 +131,14 @@ max_context = 10
 epochs = 3
 tests = 3
 
-vocabulary, clean_data = traindata() # Текст -> Датасет string 
+vocabulary, clean_data = traindata() # Текст -> List<string> 
 print(clean_data)
 
-int_data = [] # Датасет string -> Датасет int
+# List<string> -> List<int>
 int_data = to_pretensor(clean_data)
 print(int_data)
 
- # Датасет int -> Датасет torch.int64
+ # List<int> -> Датасет torch.int64
 data = torch.tensor(int_data, dtype=torch.int64)
 print(data)
 dim = len(vocabulary)
@@ -169,8 +158,6 @@ for j in range(epochs):
  for i, (x, y) in enumerate(dataloader):#ОБУЧЕНИЕ
   output=model(x)
   y_probs=to_probs(y)
-  print(output)
-  print(y_probs)
   #print(f'Output {output[0][0]}') # Убираем кавычки. Берем первую строку матрицы.
   #print(f'Target {y_probs[0]}')
   #print(f'{vocabulary[torch.argmax(output[0][0], dim=-1)]} {output}')
@@ -184,7 +171,7 @@ for j in range(epochs):
   optimizer.zero_grad()
   loss.backward()
   optimizer.step()
-  if i % 100 ==0:
+  if i % 20 ==0:
     print('Train Epoch {}: [{}/{}], Loss {:.4f}'.format
    (j, i+1, len(dataloader), loss))
     
